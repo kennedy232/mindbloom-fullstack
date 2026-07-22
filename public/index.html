@@ -1,8 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B4B43">
 <meta charset="utf-8" />
 <title>MindBloom</title>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
 <style>
   :root{
     --teal-deep:#14332E;
