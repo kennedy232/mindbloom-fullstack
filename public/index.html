@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MindBloom</title>
+<style>
+  :root{
+    --teal-deep:#14332E;
+    --teal:#1B4B43;
+    --mint-bg:#F4F8F6;
+    --sage:#7FAF9B;
+    --sage-soft:#DCEBE4;
+    --coral:#FF7A59;
+    --coral-soft:#FFE3DA;
+    --lavender:#8B7BC2;
+    --lavender-soft:#EAE5F7;
+    --ink:#1F2E2A;
+    --ink-soft:#5B6B65;
+    --card:#FFFFFF;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--mint-bg);
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app-shell{
+    width:100%;
+    max-width:430px;
+    min-height:100vh;
+    background:var(--mint-bg);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    box-shadow:0 0 40px rgba(20,51,46,0.12);
+  }
+  header.brand{
+    background:var(--teal-deep);
+    color:#fff;
+    padding:22px 20px 18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-shrink:0;
+  }
+  header.brand svg{flex-shrink:0;}
+  header.brand .word{
+    font-family:var(--serif);
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:0.2px;
+  }
+  header.brand .tag{
+    font-size:11.5px;
+    color:var(--sage);
+    margin-top:1px;
+    font-style:italic;
+  }
+  main{
+    flex:1;
+    overflow-y:auto;
+    padding:20px 18px 90px;
+  }
+  .screen{display:none;}
+  .screen.active{display:block; animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  h1.page-title{
+    font-family:var(--serif);
+    font-size:24px;
+    margin:0 0 4px;
+    color:var(--teal-deep);
+  }
+  p.page-sub{
+    margin:0 0 20px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    line-height:1.5;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:0 2px 10px rgba(20,51,46,0.06);
+  }
+  .card h2{
+    font-family:var(--serif);
+    font-size:16px;
+    margin:0 0 12px;
+    color:var(--teal-deep);
+  }
+
+  /* Mood picker */
+  .mood-row{display:flex; justify-content:space-between; gap:8px;}
+  .mood-btn{
+    flex:1;
+    border:none;
+    background:var(--sage-soft);
+    border-radius:14px;
+    padding:12px 4px 8px;
+    font-size:24px;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .mood-btn span.lbl{font-size:10px; font-family:var(--sans); color:var(--ink-soft);}
+  .mood-btn:hover{transform:translateY(-2px);}
+  .mood-btn.selected{background:var(--teal); }
+  .mood-btn.selected span.lbl{color:#fff;}
+
+  .quick-actions{display:flex; flex-direction:column; gap:10px;}
+  .quick-btn{
+    display:flex; align-items:center; gap:12px;
+    background:var(--mint-bg);
+    border:1px solid #E4EDE9;
+    border-radius:12px;
+    padding:12px 14px;
+    font-family:var(--sans);
+    font-size:13.5px;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:left;
+  }
+  .quick-btn:hover{border-color:var(--sage);}
+  .quick-btn .dot{width:34px; height:34px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+
+  .history-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 0; font-size:13px; border-bottom:1px solid #EEF3F1;
+  }
+  .history-row:last-child{border-bottom:none;}
+  .history-row .em{font-size:18px; margin-right:8px;}
+  .empty-note{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
+
+  /* Breathe screen */
+  .breathe-wrap{
+    display:flex; flex-direction:column; align-items:center; padding-top:6px;
+  }
+  .duration-picker{display:flex; gap:8px; margin-bottom:26px;}
+  .dur-btn{
+    border:1.5px solid var(--sage); background:transparent; color:var(--teal-deep);
+    border-radius:20px; padding:6px 16px; font-size:13px; cursor:pointer; font-family:var(--sans);
+  }
+  .dur-btn.active{background:var(--teal-deep); color:#fff; border-color:var(--teal-deep);}
+
+  .breath-circle-holder{
+    width:230px; height:230px; display:flex; align-items:center; justify-content:center; position:relative; margin-bottom:22px;
+  }
+  #breathCircle{
+    width:120px; height:120px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #9FC7BA, var(--teal));
+    transition:transform 4s ease-in-out;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 14px rgba(127,175,155,0.18), 0 0 0 28px rgba(127,175,155,0.10);
+  }
+  #breathPhase{color:#fff; font-family:var(--serif); font-size:15px;}
+  #breathTimer{font-size:13px; color:var(--ink-soft); margin-bottom:18px;}
+  .primary-btn{
+    background:var(--coral); color:#fff; border:none; border-radius:24px;
+    padding:12px 30px; font-size:14.5px; font-weight:600; cursor:pointer; font-family:var(--sans);
+  }
+  .primary-btn:hover{filter:brightness(1.05);}
+  .primary-btn.stop{background:var(--ink-soft);}
+
+  /* Journal */
+  textarea, input[type=text]{
+    width:100%; border:1px solid #DCE7E2; border-radius:10px; padding:10px 12px;
+    font-family:var(--sans); font-size:13.5px; resize:vertical; margin-bottom:10px; color:var(--ink);
+  }
+  label.field-label{font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:4px; font-weight:600;}
+  .entry{
+    border-left:3px solid var(--sage); padding:8px 0 8px 12px; margin-bottom:10px;
+  }
+  .entry .date{font-size:11px; color:var(--ink-soft); margin-bottom:3px;}
+  .entry .row{font-size:13px; margin-bottom:3px;}
+  .entry .row b{color:var(--teal-deep);}
+  .del-link{font-size:11px; color:var(--coral); cursor:pointer; background:none; border:none; padding:0; font-family:var(--sans);}
+
+  /* Community */
+  .post{
+    background:var(--lavender-soft); border-radius:12px; padding:12px 14px; margin-bottom:10px;
+  }
+  .post .txt{font-size:13.5px; color:var(--ink); margin-bottom:4px;}
+  .post .meta{font-size:10.5px; color:#7A6FA0;}
+  .disclosure{
+    font-size:11px; color:var(--ink-soft); background:var(--sage-soft); border-radius:10px; padding:8px 12px; margin-bottom:14px;
+  }
+
+  nav.tabbar{
+    position:absolute; bottom:0; left:0; right:0;
+    background:#fff; border-top:1px solid #E7EEEB;
+    display:flex; justify-content:space-around; padding:8px 4px 10px;
+  }
+  .tab-btn{
+    background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-family:var(--sans); font-size:10.5px; color:var(--ink-soft); cursor:pointer; flex:1; padding:4px;
+  }
+  .tab-btn.active{color:var(--teal-deep); font-weight:700;}
+  .tab-btn svg{width:20px; height:20px;}
+
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-thumb{background:#D3E2DB; border-radius:3px;}
+
+  .loading-note{font-size:12px; color:var(--ink-soft); text-align:center; padding:20px;}
+</style>
+</head>
+<body>
+<div id="app-shell">
+
+  <header class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 21c-4-2-7-5.5-7-10a7 7 0 0 1 7-7 7 7 0 0 1 7 7c0 4.5-3 8-7 10z" fill="#7FAF9B"/></svg>
+    <div>
+      <div class="word">MindBloom</div>
+      <div class="tag">Grow calmer, one moment at a time.</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- HOME -->
+    <section class="screen active" id="screen-home">
+      <h1 class="page-title">Good day.</h1>
+      <p class="page-sub">Check in with yourself, then choose what would help most right now.</p>
+
+      <div class="card">
+        <h2>How are you feeling?</h2>
+        <div class="mood-row" id="moodRow">
+          <button class="mood-btn" data-mood="great">🙂<span class="lbl">Good</span></button>
+          <button class="mood-btn" data-mood="okay">😐<span class="lbl">Okay</span></button>
+          <button class="mood-btn" data-mood="low">🙁<span class="lbl">Low</span></button>
+          <button class="mood-btn" data-mood="anxious">😟<span class="lbl">Anxious</span></button>
+          <button class="mood-btn" data-mood="tired">😴<span class="lbl">Tired</span></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Quick actions</h2>
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="goTo('breathe')">
+            <span class="dot" style="background:var(--sage-soft);">🌬️</span>
+            <span>Start a breathing exercise</span>
+          </button>
+          <button class="quick-btn" onclick="goTo('journal')">
+            <span class="dot" style="background:var(--lavender-soft);">📝</span>
+            <span>Write a journal entry</span>
+          </button>
+          <button class="quick-btn" onclick="goTo('community')">
+            <span class="dot" style="background:var(--coral-soft);">💬</span>
+            <span>Visit the community</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Recent check-ins</h2>
+        <div id="moodHistory"><p class="empty-note">Your mood log will show up here.</p></div>
+      </div>
+    </section>
+
+    <!-- BREATHE -->
+    <section class="screen" id="screen-breathe">
+      <h1 class="page-title">Breathe</h1>
+      <p class="page-sub">Box breathing: in for 4, hold for 4, out for 4, hold for 4.</p>
+
+      <div class="breathe-wrap">
+        <div class="duration-picker">
+          <button class="dur-btn active" data-min="3">3 min</button>
+          <button class="dur-btn" data-min="5">5 min</button>
+          <button class="dur-btn" data-min="10">10 min</button>
+        </div>
+
+        <div class="breath-circle-holder">
+          <div id="breathCircle"><span id="breathPhase">Ready</span></div>
+        </div>
+        <div id="breathTimer">Choose a duration and begin.</div>
+        <button class="primary-btn" id="breathToggle">Begin</button>
+      </div>
+    </section>
+
+    <!-- JOURNAL -->
+    <section class="screen" id="screen-journal">
+      <h1 class="page-title">Journal</h1>
+      <p class="page-sub">A short CBT-style reframe: what happened, what you thought, and a steadier way to see it.</p>
+
+      <div class="card">
+        <h2>New entry</h2>
+        <label class="field-label">Situation</label>
+        <textarea id="jSituation" rows="2" placeholder="What happened?"></textarea>
+        <label class="field-label">Automatic thought</label>
+        <textarea id="jThought" rows="2" placeholder="What went through your mind?"></textarea>
+        <label class="field-label">Reframe</label>
+        <textarea id="jReframe" rows="2" placeholder="A more balanced way to look at it"></textarea>
+        <button class="primary-btn" id="jSave" style="width:100%;">Save entry</button>
+      </div>
+
+      <div class="card">
+        <h2>Past entries</h2>
+        <div id="journalList"><p class="empty-note">Nothing saved yet — your entries stay private to you.</p></div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY -->
+    <section class="screen" id="screen-community">
+      <h1 class="page-title">Community</h1>
+      <p class="page-sub">Anonymous, moderated encouragement — for everyone using MindBloom.</p>
+      <div class="disclosure">Posts here are shared and visible to anyone using this app, not just you.</div>
+
+      <div class="card">
+        <label class="field-label">Share something encouraging (140 characters)</label>
+        <input type="text" id="cPost" maxlength="140" placeholder="You're not alone in this...">
+        <button class="primary-btn" id="cSend" style="width:100%;">Post anonymously</button>
+      </div>
+
+      <div id="communityList"><p class="loading-note">Loading community wall…</p></div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-screen="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      Home
+    </button>
+    <button class="tab-btn" data-screen="breathe">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>
+      Breathe
+    </button>
+    <button class="tab-btn" data-screen="journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h12l4 4v12H4z"/><path d="M8 10h8M8 14h6"/></svg>
+      Journal
+    </button>
+    <button class="tab-btn" data-screen="community">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M10 20c0-3 3-5 6-5s6 2 6 5"/></svg>
+      Community
+    </button>
+  </nav>
+
+</div>
+
+<script>
+// ---------- API HELPER ----------
+const API = ''; // same-origin; set to a full URL if the frontend is hosted separately from the API
+
+// Anonymous device ID, used to scope private mood/journal data to this browser.
+// No accounts or personal info required.
+function getUserId(){
+  let id = localStorage.getItem('mindbloom_user_id');
+  if(!id){
+    id = (crypto.randomUUID ? crypto.randomUUID() : 'u-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+    localStorage.setItem('mindbloom_user_id', id);
+  }
+  return id;
+}
+const USER_ID = getUserId();
+
+async function apiGet(pathName){
+  const res = await fetch(`${API}${pathName}`);
+  if(!res.ok) throw new Error(`GET ${pathName} failed: ${res.status}`);
+  return res.json();
+}
+async function apiPost(pathName, body){
+  const res = await fetch(`${API}${pathName}`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(`POST ${pathName} failed: ${res.status}`);
+  return res.json();
+}
+async function apiDelete(pathName){
+  const res = await fetch(`${API}${pathName}`, { method:'DELETE' });
+  if(!res.ok && res.status !== 204) throw new Error(`DELETE ${pathName} failed: ${res.status}`);
+}
+
+// ---------- NAVIGATION ----------
+function goTo(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === name));
+  document.querySelector('main').scrollTop = 0;
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => goTo(b.dataset.screen)));
+
+// ---------- MOOD ----------
+const moodLabels = { great:'🙂 Good', okay:'😐 Okay', low:'🙁 Low', anxious:'😟 Anxious', tired:'😴 Tired' };
+
+async function loadMoods(){
+  try{ return await apiGet(`/api/moods?userId=${encodeURIComponent(USER_ID)}`); }
+  catch(e){ console.error('load moods failed', e); return []; }
+}
+async function addMood(mood){
+  try{ await apiPost('/api/moods', { userId: USER_ID, mood }); }
+  catch(e){ console.error('mood save failed', e); }
+}
+function renderMoodHistory(list){
+  const el = document.getElementById('moodHistory');
+  if(!list.length){ el.innerHTML = '<p class="empty-note">Your mood log will show up here.</p>'; return; }
+  el.innerHTML = list.slice(-5).reverse().map(m =>
+    `<div class="history-row"><span><span class="em">${moodLabels[m.mood].split(' ')[0]}</span>${moodLabels[m.mood].split(' ').slice(1).join(' ')}</span><span>${new Date(m.date).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>`
+  ).join('');
+}
+document.querySelectorAll('.mood-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    await addMood(btn.dataset.mood);
+    renderMoodHistory(await loadMoods());
+  });
+});
+
+// ---------- BREATHE ----------
+let breathInterval = null;
+let breathRunning = false;
+let selectedMinutes = 3;
+document.querySelectorAll('.dur-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(breathRunning) return;
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedMinutes = parseInt(btn.dataset.min, 10);
+  });
+});
+
+const phases = [
+  { label:'Inhale', scale:1.55, seconds:4 },
+  { label:'Hold', scale:1.55, seconds:4 },
+  { label:'Exhale', scale:1.0, seconds:4 },
+  { label:'Hold', scale:1.0, seconds:4 }
+];
+
+function formatTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${s.toString().padStart(2,'0')} remaining`;
+}
+
+document.getElementById('breathToggle').addEventListener('click', () => {
+  if(breathRunning){ stopBreathing(); } else { startBreathing(); }
+});
+
+function startBreathing(){
+  breathRunning = true;
+  const toggle = document.getElementById('breathToggle');
+  toggle.textContent = 'Stop';
+  toggle.classList.add('stop');
+
+  let totalSeconds = selectedMinutes * 60;
+  let phaseIndex = 0;
+  const circle = document.getElementById('breathCircle');
+  const phaseLabel = document.getElementById('breathPhase');
+  const timerLabel = document.getElementById('breathTimer');
+
+  function runPhase(){
+    if(totalSeconds <= 0){ stopBreathing(true); return; }
+    const p = phases[phaseIndex % phases.length];
+    phaseLabel.textContent = p.label;
+    circle.style.transform = `scale(${p.scale})`;
+    timerLabel.textContent = formatTime(totalSeconds);
+
+    let elapsed = 0;
+    breathInterval = setInterval(() => {
+      elapsed++; totalSeconds--;
+      timerLabel.textContent = formatTime(Math.max(totalSeconds,0));
+      if(elapsed >= p.seconds){
+        clearInterval(breathInterval);
+        phaseIndex++;
+        runPhase();
+      } else if(totalSeconds <= 0){
+        clearInterval(breathInterval);
+        stopBreathing(true);
+      }
+    }, 1000);
+  }
+  runPhase();
+}
+
+function stopBreathing(finished){
+  breathRunning = false;
+  clearInterval(breathInterval);
+  const toggle = document.getElementById('breathToggle');
+  toggle.textContent = 'Begin';
+  toggle.classList.remove('stop');
+  document.getElementById('breathCircle').style.transform = 'scale(1)';
+  document.getElementById('breathPhase').textContent = finished ? 'Well done' : 'Ready';
+  document.getElementById('breathTimer').textContent = finished ? 'Session complete. Notice how you feel.' : 'Choose a duration and begin.';
+}
+
+// ---------- JOURNAL ----------
+async function loadJournal(){
+  try{ return await apiGet(`/api/journal?userId=${encodeURIComponent(USER_ID)}`); }
+  catch(e){ console.error('load journal failed', e); return []; }
+}
+async function addJournalEntry(situation, thought, reframe){
+  try{ await apiPost('/api/journal', { userId: USER_ID, situation, thought, reframe }); }
+  catch(e){ console.error('journal save failed', e); }
+}
+async function deleteJournalEntry(id){
+  try{ await apiDelete(`/api/journal/${encodeURIComponent(id)}?userId=${encodeURIComponent(USER_ID)}`); }
+  catch(e){ console.error('journal delete failed', e); }
+}
+function renderJournal(list){
+  const el = document.getElementById('journalList');
+  if(!list.length){ el.innerHTML = '<p class="empty-note">Nothing saved yet — your entries stay private to you.</p>'; return; }
+  el.innerHTML = list.slice().reverse().map(e => `
+    <div class="entry">
+      <div class="date">${new Date(e.date).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="row"><b>Situation:</b> ${escapeHtml(e.situation)}</div>
+      <div class="row"><b>Thought:</b> ${escapeHtml(e.thought)}</div>
+      <div class="row"><b>Reframe:</b> ${escapeHtml(e.reframe)}</div>
+      <button class="del-link" data-id="${e.id}">Delete</button>
+    </div>`).join('');
+  el.querySelectorAll('.del-link').forEach(btn => btn.addEventListener('click', async () => {
+    await deleteJournalEntry(btn.dataset.id);
+    renderJournal(await loadJournal());
+  }));
+}
+function escapeHtml(str){
+  const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML;
+}
+document.getElementById('jSave').addEventListener('click', async () => {
+  const situation = document.getElementById('jSituation').value.trim();
+  const thought = document.getElementById('jThought').value.trim();
+  const reframe = document.getElementById('jReframe').value.trim();
+  if(!situation && !thought && !reframe) return;
+  await addJournalEntry(situation, thought, reframe);
+  renderJournal(await loadJournal());
+  document.getElementById('jSituation').value = '';
+  document.getElementById('jThought').value = '';
+  document.getElementById('jReframe').value = '';
+});
+
+// ---------- COMMUNITY (shared) ----------
+async function loadCommunity(){
+  try{ return await apiGet('/api/community'); }
+  catch(e){ console.error('load community failed', e); return []; }
+}
+async function addCommunityPost(text){
+  try{ await apiPost('/api/community', { text }); }
+  catch(e){ console.error('community post failed', e); alert('Could not post — please try again.'); }
+}
+function renderCommunity(list){
+  const el = document.getElementById('communityList');
+  if(!list.length){ el.innerHTML = '<p class="empty-note">Be the first to share something encouraging.</p>'; return; }
+  el.innerHTML = list.slice(0,30).map(p => `
+    <div class="post">
+      <div class="txt">${escapeHtml(p.text)}</div>
+      <div class="meta">Anonymous · ${new Date(p.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
+    </div>`).join('');
+}
+document.getElementById('cSend').addEventListener('click', async () => {
+  const input = document.getElementById('cPost');
+  const text = input.value.trim();
+  if(!text) return;
+  await addCommunityPost(text);
+  renderCommunity(await loadCommunity());
+  input.value = '';
+});
+
+// ---------- INIT ----------
+(async function init(){
+  renderMoodHistory(await loadMoods());
+  renderJournal(await loadJournal());
+  renderCommunity(await loadCommunity());
+})();
+</script>
+</body>
+</html>
